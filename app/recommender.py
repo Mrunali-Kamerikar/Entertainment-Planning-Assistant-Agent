@@ -3,17 +3,25 @@
 from app.ranking import rank_movies
 
 
-def get_personalized_context(retriever, query, user_data):
+def get_personalized_recommendations(vector_db, query, user_data):
 
-    documents = retriever.invoke(query)
+    # Get similarity scores
+    similarity_results = vector_db.similarity_search_with_score(
+        query,
+        k=5
+    )
 
-    ranked = rank_movies(documents, user_data)
+    ranked = rank_movies(similarity_results, user_data)
 
-    top_docs = [doc for doc, _ in ranked[:2]]
+    top_items = ranked[:2]
+
+    documents = [item["document"] for item in top_items]
 
     explanation = "\n".join([
-        f"{doc.metadata.get('title')} → Score: {score:.2f}"
-        for doc, score in ranked[:2]
+        f"{item['document'].metadata.get('title')} "
+        f"(Score: {item['score']}, "
+        f"Details: {item['breakdown']})"
+        for item in top_items
     ])
 
-    return top_docs, explanation
+    return documents, explanation
