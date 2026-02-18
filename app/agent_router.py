@@ -47,9 +47,7 @@ class EntertainmentAgent:
                 user_memory
             )
         else:
-            documents = self.retriever.get_relevant_documents(query)
-
-        context_text = "\n\n".join([doc.page_content for doc in documents])
+            documents = self.retriever.invoke(query)
 
         chain = create_stuff_documents_chain(
             self.llm,
@@ -57,15 +55,14 @@ class EntertainmentAgent:
         )
 
         response = chain.invoke({
-            "context": context_text,
-            "input": query
+            "input": query,
+            "context": documents
         })
 
         # Store recommendation history
-        if intent == "recommendation":
-            if documents:
-                title = documents[0].metadata.get("title")
-                self.memory.add_history(title)
+        if intent == "recommendation" and documents:
+            title = documents[0].metadata.get("title")
+            self.memory.add_history(title)
 
         return {
             "intent": intent,
