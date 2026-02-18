@@ -17,3 +17,4 @@ def load_llm():
     )
 
     return HuggingFacePipeline(pipeline=pipe)
+
