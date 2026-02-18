@@ -1,49 +1,15 @@
-import json
-import os
-from langchain_community.vectorstores import Chroma
-from langchain_huggingface import HuggingFaceEmbeddings
+# app/vector_store.py
 
-# Create vector DB folder
-os.makedirs("data/vector_db", exist_ok=True)
-
-def create_vector_store():
-    """
-    Converts cleaned movie data into embeddings
-    and stores them in Chroma vector database
-    """
-
-    input_file = "data/processed/cleaned_movies.json"
-
-    try:
-        # Load cleaned data
-        with open(input_file, "r", encoding="utf-8") as f:
-            cleaned_movies = json.load(f)
-
-        texts = [movie["text"] for movie in cleaned_movies]
-        metadatas = [movie["metadata"] for movie in cleaned_movies]
-
-        print("Creating embeddings...")
-
-        # Load embedding model (UPDATED)
-        embedding_model = HuggingFaceEmbeddings(
-            model_name="sentence-transformers/all-MiniLM-L6-v2"
-        )
-
-        # Create vector store
-        vector_db = Chroma.from_texts(
-            texts=texts,
-            embedding=embedding_model,
-            metadatas=metadatas,
-            persist_directory="data/vector_db"
-        )
-
-        vector_db.persist()
-
-        print("Vector database created successfully.")
-
-    except Exception as e:
-        print("Error creating vector store:", e)
+from langchain_chroma import Chroma
+from app.config import VECTOR_DB_PATH
+from app.embeddings import load_embedding_model
 
 
-if __name__ == "__main__":
-    create_vector_store()
+def load_vector_store():
+
+    embedding_model = load_embedding_model()
+
+    return Chroma(
+        persist_directory=VECTOR_DB_PATH,
+        embedding_function=embedding_model
+    )
