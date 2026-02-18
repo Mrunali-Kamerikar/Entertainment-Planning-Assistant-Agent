@@ -3,12 +3,17 @@
 from app.ranking import rank_movies
 
 
-def get_personalized_context(retriever, query, user_memory):
+def get_personalized_context(retriever, query, user_data):
 
-    # FIXED: use invoke instead of deprecated method
     documents = retriever.invoke(query)
 
-    ranked_docs = rank_movies(documents, user_memory)
+    ranked = rank_movies(documents, user_data)
 
-    # Take top 2 after ranking
-    return ranked_docs[:2]
+    top_docs = [doc for doc, _ in ranked[:2]]
+
+    explanation = "\n".join([
+        f"{doc.metadata.get('title')} → Score: {score:.2f}"
+        for doc, score in ranked[:2]
+    ])
+
+    return top_docs, explanation
