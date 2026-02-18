@@ -13,30 +13,42 @@ class UserMemory:
 
         if not os.path.exists(MEMORY_FILE):
             with open(MEMORY_FILE, "w") as f:
-                json.dump({
-                    "ratings": {},
-                    "preferred_genres": [],
-                    "history": []
-                }, f)
+                json.dump({}, f)
 
-    def load_memory(self):
+    def _load(self):
         with open(MEMORY_FILE, "r") as f:
             return json.load(f)
 
-    def save_memory(self, memory):
+    def _save(self, data):
         with open(MEMORY_FILE, "w") as f:
-            json.dump(memory, f, indent=4)
+            json.dump(data, f, indent=4)
 
-    def add_rating(self, movie_title, rating):
-        memory = self.load_memory()
-        memory["ratings"][movie_title] = rating
-        self.save_memory(memory)
+    def init_user(self, username):
+        data = self._load()
+        if username not in data:
+            data[username] = {
+                "ratings": {},
+                "preferred_genres": {},
+                "history": []
+            }
+            self._save(data)
 
-    def add_history(self, movie_title):
-        memory = self.load_memory()
-        if movie_title not in memory["history"]:
-            memory["history"].append(movie_title)
-        self.save_memory(memory)
+    def get_user(self, username):
+        return self._load().get(username, {})
 
-    def get_memory(self):
-        return self.load_memory()
+    def add_rating(self, username, title, rating):
+        data = self._load()
+        data[username]["ratings"][title] = rating
+        self._save(data)
+
+    def add_genre_preference(self, username, genre):
+        data = self._load()
+        prefs = data[username]["preferred_genres"]
+        prefs[genre] = prefs.get(genre, 0) + 1
+        self._save(data)
+
+    def add_history(self, username, title):
+        data = self._load()
+        if title not in data[username]["history"]:
+            data[username]["history"].append(title)
+        self._save(data)
