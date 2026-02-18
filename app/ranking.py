@@ -1,6 +1,9 @@
 # app/ranking.py
 
-def rank_movies(documents, user_data):
+def rank_movies(similarity_results, user_data):
+    """
+    similarity_results = [(Document, similarity_score)]
+    """
 
     ratings = user_data.get("ratings", {})
     genre_prefs = user_data.get("preferred_genres", {})
@@ -8,27 +11,33 @@ def rank_movies(documents, user_data):
 
     ranked = []
 
-    for doc in documents:
+    for doc, sim_score in similarity_results:
 
         title = doc.metadata.get("title", "")
         genre = doc.metadata.get("genre", "Unknown")
 
-        score = 1.0  # base relevance
+        # Convert similarity distance to positive score
+        base_score = 1 - sim_score
 
-        # Rating weight
-        if title in ratings:
-            score += ratings[title] * 0.7
+        rating_boost = ratings.get(title, 0) * 0.5
+        genre_boost = genre_prefs.get(genre, 0) * 0.3
+        history_penalty = -0.7 if title in history else 0
 
-        # Genre preference weight
-        if genre in genre_prefs:
-            score += genre_prefs[genre] * 0.5
+        final_score = base_score + rating_boost + genre_boost + history_penalty
 
-        # History penalty
-        if title in history:
-            score -= 1.0
+        ranked.append(
+            {
+                "document": doc,
+                "score": round(final_score, 3),
+                "breakdown": {
+                    "base_similarity": round(base_score, 3),
+                    "rating_boost": rating_boost,
+                    "genre_boost": genre_boost,
+                    "history_penalty": history_penalty
+                }
+            }
+        )
 
-        ranked.append((doc, score))
-
-    ranked.sort(key=lambda x: x[1], reverse=True)
+    ranked.sort(key=lambda x: x["score"], reverse=True)
 
     return ranked
