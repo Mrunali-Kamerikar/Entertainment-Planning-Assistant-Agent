@@ -4,21 +4,19 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_classic.chains.combine_documents import create_stuff_documents_chain
 
 from app.vector_store import load_vector_store
-from app.retriever import get_retriever
 from app.llm import load_llm
 from app.intent_classifier import classify_intent
 from app.prompts import get_prompt
 from app.user_memory import UserMemory
-from app.recommender import get_personalized_context
 from app.genre_extractor import extract_genre
 from app.auth import AuthManager
+from app.recommender import get_personalized_recommendations
 
 
 class EntertainmentAgent:
 
     def __init__(self):
         self.vector_db = load_vector_store()
-        self.retriever = get_retriever(self.vector_db)
         self.llm = load_llm()
         self.memory = UserMemory()
         self.auth = AuthManager()
@@ -48,13 +46,13 @@ class EntertainmentAgent:
         user_data = self.memory.get_user(self.current_user)
 
         if intent == "recommendation":
-            documents, explanation = get_personalized_context(
-                self.retriever,
+            documents, explanation = get_personalized_recommendations(
+                self.vector_db,
                 query,
                 user_data
             )
         else:
-            documents = self.retriever.invoke(query)
+            documents = self.vector_db.similarity_search(query, k=3)
             explanation = ""
 
         chain = create_stuff_documents_chain(self.llm, prompt)
@@ -72,7 +70,7 @@ class EntertainmentAgent:
             self.memory.add_history(self.current_user, title)
             self.memory.add_genre_preference(self.current_user, genre)
 
-            response += f"\n\nRecommendation Score Details:\n{explanation}"
+            response += f"\n\nScoring Breakdown:\n{explanation}"
 
         return {
             "intent": intent,
