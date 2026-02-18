@@ -1,26 +1,34 @@
 # app/ranking.py
 
-def rank_movies(documents, user_memory):
+def rank_movies(documents, user_data):
 
-    ratings = user_memory.get("ratings", {})
-    history = user_memory.get("history", [])
+    ratings = user_data.get("ratings", {})
+    genre_prefs = user_data.get("preferred_genres", {})
+    history = user_data.get("history", [])
 
-    scored = []
+    ranked = []
 
     for doc in documents:
+
         title = doc.metadata.get("title", "")
-        score = 1.0
+        genre = doc.metadata.get("genre", "Unknown")
 
-        # Boost if user rated highly
+        score = 1.0  # base relevance
+
+        # Rating weight
         if title in ratings:
-            score += ratings[title] * 0.5
+            score += ratings[title] * 0.7
 
-        # Penalize if already recommended
+        # Genre preference weight
+        if genre in genre_prefs:
+            score += genre_prefs[genre] * 0.5
+
+        # History penalty
         if title in history:
-            score -= 0.5
+            score -= 1.0
 
-        scored.append((doc, score))
+        ranked.append((doc, score))
 
-    scored.sort(key=lambda x: x[1], reverse=True)
+    ranked.sort(key=lambda x: x[1], reverse=True)
 
-    return [doc for doc, _ in scored]
+    return ranked
