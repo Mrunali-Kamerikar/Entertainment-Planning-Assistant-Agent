@@ -25,16 +25,19 @@ class UserMemory:
 
     def init_user(self, username):
         data = self._load()
+
         if username not in data:
             data[username] = {
                 "ratings": {},
                 "preferred_genres": {},
                 "history": []
             }
-            self._save(data)
+
+        self._save(data)
 
     def get_user(self, username):
-        return self._load().get(username, {})
+        data = self._load()
+        return data.get(username, {})
 
     def add_rating(self, username, title, rating):
         data = self._load()
